@@ -1,56 +1,45 @@
-# dsh-message-edit-desktop
 
-in-place message editing for DeepSeek Harness / DSH Desktop
 
-hover any of your messages, click the pencil, edit the text, press **更新** — the
-history is rewritten before that turn and the new prompt starts running right away,
-**without reloading the page**.
+# dsh-edit
 
-## features
+适用于 DeepSeek Harness / DSH Desktop 的就地消息编辑
 
-* **seamless update:** the view switches to the new branch in place (`uiWorkspace.openSession`)
-  — no full-page reload, no lost scroll position, no flash
-* **always clickable update:** even with unchanged text the update button stays
-  enabled — clicking it simply reruns that message (regenerate)
-* **compact buttons:** the cancel / update pair is sized for the edit box instead of
-  the composer (28 px tall)
-* **in-place edit:** tweak any past message directly in chat
-* **clean branch:** forks history at the target turn // no ghost turns, no corrupted logs
-* **keeps attachments:** images and files survive the edit intact
-* **auto-archive:** superseded sessions are tucked away into the archive so the sidebar stays clean
-* **safe failure:** if the view cannot switch automatically, the superseded session is
-  kept (not archived underfoot) and the error is shown inline
-* **dsh-native:** blends with the active dark/light theme tokens
-* **ime-safe:** won't submit while picking pinyin / kanji characters
-* **multilingual:** en // zh // ru auto-detected
+将鼠标悬停在你的任意消息上，点击铅笔图标，编辑文本，然后按 **更新** —— 该轮对话之前的历史记录将被重写，新的提示词将立即开始运行，**无需重新加载页面**。
 
-## shortcuts
+## 功能特性
 
-* `Enter` // submit (reruns when the text is unchanged)
-* `Shift + Enter` // new line
-* `Ctrl + Enter` // quick submit
-* `Escape` // cancel
+* **无缝更新：** 视图就地切换到新分支（`uiWorkspace.openSession`）—— 无需刷新整个页面，不会丢失滚动位置，没有闪烁
+* **更新按钮始终可点击：** 即使文本未更改，更新按钮仍保持启用状态 —— 点击它只会重新运行该消息（重新生成）
+* **紧凑的按钮：** 取消/更新按钮组的尺寸与编辑框相匹配，而不是与撰写器相匹配（高度为 28 像素）
+* **就地编辑：** 直接在聊天中修改任何过往消息
+* **干净的分支：** 在目标轮次处分叉历史记录 // 无幽灵轮次，无损坏的日志
+* **保留附件：** 图片和文件在编辑后完好无损
+* **自动归档：** 被取代的会话将被隐藏到归档中，以保持侧边栏整洁
+* **安全失败处理：** 如果视图无法自动切换，被取代的会话将被保留（不会被暗中归档），并在页面内联显示错误信息
+* **DSH 原生：** 与当前激活的深色/浅色主题 token 融为一体
+* **输入法安全：** 在选择拼音/汉字字符时不会触发提交
+* **多语言：** 自动检测英文 // 中文 // 俄文
 
-## install (DSH Desktop)
+## 快捷键
 
-1. open the plugin manager in DSH Desktop and import this folder (`main/`)
-2. make sure `dsh-message-edit-desktop` is enabled
-3. restart / reload the client once (the plugin bundle is served to the browser client)
+* `Enter` // 提交（文本未更改时重新运行）
+* `Shift + Enter` // 换行
+* `Ctrl + Enter` // 快速提交
+* `Escape` // 取消
 
-The package name is deliberately distinct from the marketplace's `dsh-message-edit`
-and `dsh-plugin-message-edit`: it owns the `messageEditDesktop` service and
-namespace, so it can coexist with either of them without clashing. If you keep both
-installed, only the lowest slot priority renders the editor — this one registers at
-`-2`, so its editor wins over the built-in renderer (`0`) and over
-`dsh-prompt-edit` (`-1`).
+## 安装 (DSH Desktop)
 
-## how it works
+1. 打开 DSH Desktop 中的插件管理器，并导入此文件夹
+2. 确保 `dsh-edit` 已启用
+3. 重启/重新加载客户端一次（插件包将提供给浏览器客户端）
 
-1. cuts the session history right before the edited turn
-2. spawns a clean child session with your updated message and attachments
-3. reveals the child session in place through the client's workspace service
-4. archives the old session branch once the view has moved
+## 工作原理
 
-## license
+1. 在编辑的轮次之前截断会话历史记录
+2. 使用你更新后的消息和附件生成一个干净的子公司会话
+3. 通过客户端的工作区服务就地显示该子公司会话
+4. 视图切换后，归档旧的会话分支
+
+## 许可证
 
 MIT
