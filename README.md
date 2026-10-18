@@ -1,4 +1,4 @@
-# dsh-message-edit-desktop
+# dsh-edit
 
 适用于 DeepSeek Harness / DSH Desktop 的就地消息编辑
 
