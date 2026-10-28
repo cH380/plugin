@@ -36,6 +36,40 @@
 最低的那个渲染器生效 —— 本插件注册在 `-2`，所以它的编辑器会压过内置渲染器（`0`）和
 `dsh-prompt-edit`（`-1`）。
 
+## 版本兼容（DSH 0.2.1-rc.3）
+
+当前版本针对 **DSH Desktop 0.2.1-rc.3** 构建与验证，`package.json` 用 `engines.dsh`
+精确声明了 `0.2.1-rc.3`：DSH 在安装与启动时都会先校验该范围，版本不符时只给出明确的
+拒绝并跳过本插件，而不是让插件在启动阶段把整个应用拖垮。
+
+* 运行时只保留两个必须随宿主版本走的依赖：`@deepseek-ai/dsh-typert-protocol`（服务基类）
+  与 `@deepseek-ai/cordis`，版本与 0.2.1-rc.3 内置版本一致。
+* **刻意不再依赖 `@deepseek-ai/dsh-session`。** 该版本的 Host 已经内置它；插件如果把它
+  作为依赖装进 profile，会在 `profile/node_modules` 里出现一份旧副本，遮蔽宿主自己的包，
+  导致 `sessions` 服务无法激活、17 个插件集体等待、DSH 启动即崩。
+  分叉种子改由 `lib/compat.host.js` 内置的等价实现（`session/end-seed` 标记 + 未闭合
+  工具调用的 `forked` 收尾事件）生成，行为与宿主 `buildForkSeed` 一致。
+* 编辑时停止旧会话使用的是 rc.3 的 `agent.cancel({ kind: "user" })` 收尾原因对象；
+  rc.2 时代的裸字符串会让循环在收尾时抛错。
+* 读取会话标题走 `sessionTitle.get(session)` 快照（rc.2 的 `titleOf` 保留为回退）。
+
+升级到新的 DSH rc 时，只需要同步 `engines.dsh`、`@deepseek-ai/dsh-typert-protocol` 和
+`@deepseek-ai/cordis` 三处版本，不要重新引入任何 `@deepseek-ai/dsh-*` 运行时依赖。
+
+### 启动失败排查
+
+若 DSH 启动时报 `startup failed: N required plugin did not activate`，且等待服务的插件里
+大量出现 `sessions`，通常是 profile 里残留了旧版官方包的副本：
+
+```powershell
+Get-ChildItem "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\@deepseek-ai"
+```
+
+其中出现低于当前 DSH 版本的包（例如 rc.2 的 `dsh-session`）即为遮蔽源；删掉这些旧副本
+（连同 `pnpm-lock.yaml`、`package.json` 里对它们的声明）后重启 DSH 即可。本插件自身只会
+安装与宿主同版本的 `dsh-typert-protocol` 与 `cordis`，不会再引入其它 `@deepseek-ai/dsh-*`
+运行时包。
+
 ## 工作原理
 
 1. 在编辑的轮次之前截断会话历史记录
