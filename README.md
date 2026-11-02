@@ -36,25 +36,57 @@
 最低的那个渲染器生效 —— 本插件注册在 `-2`，所以它的编辑器会压过内置渲染器（`0`）和
 `dsh-prompt-edit`（`-1`）。
 
-## 版本兼容（DSH 0.2.1-rc.3）
+## 版本兼容（0.2.1-rc.5 起，前向兼容后续版本）
 
-当前版本针对 **DSH Desktop 0.2.1-rc.3** 构建与验证，`package.json` 用 `engines.dsh`
-精确声明了 `0.2.1-rc.3`：DSH 在安装与启动时都会先校验该范围，版本不符时只给出明确的
-拒绝并跳过本插件，而不是让插件在启动阶段把整个应用拖垮。
+本版本在 **DSH Desktop 0.2.1-rc.5** 上验证，并且刻意写成对后续版本免维护的形式。
 
-* 运行时只保留两个必须随宿主版本走的依赖：`@deepseek-ai/dsh-typert-protocol`（服务基类）
-  与 `@deepseek-ai/cordis`，版本与 0.2.1-rc.3 内置版本一致。
-* **刻意不再依赖 `@deepseek-ai/dsh-session`。** 该版本的 Host 已经内置它；插件如果把它
-  作为依赖装进 profile，会在 `profile/node_modules` 里出现一份旧副本，遮蔽宿主自己的包，
-  导致 `sessions` 服务无法激活、17 个插件集体等待、DSH 启动即崩。
-  分叉种子改由 `lib/compat.host.js` 内置的等价实现（`session/end-seed` 标记 + 未闭合
-  工具调用的 `forked` 收尾事件）生成，行为与宿主 `buildForkSeed` 一致。
-* 编辑时停止旧会话使用的是 rc.3 的 `agent.cancel({ kind: "user" })` 收尾原因对象；
-  rc.2 时代的裸字符串会让循环在收尾时抛错。
-* 读取会话标题走 `sessionTitle.get(session)` 快照（rc.2 的 `titleOf` 保留为回退）。
+### 1. 清单不再精确钉版
 
-升级到新的 DSH rc 时，只需要同步 `engines.dsh`、`@deepseek-ai/dsh-typert-protocol` 和
-`@deepseek-ai/cordis` 三处版本，不要重新引入任何 `@deepseek-ai/dsh-*` 运行时依赖。
+`engines.dsh` 从精确的 `0.2.1-rc.3` 改成开放的 `>=0.2.1-rc.5`。DSH 在安装与启动时都会先用
+`semver.satisfies(运行版本, engines.dsh, { includePrerelease: true })` 校验；写成下限范围后，
+rc.6、0.2.2、0.3.x 乃至 1.x 都不再触发「插件与 dsh 版本不兼容」的拒绝，也就不会每次升级都要改清单。
+
+### 2. 不再把宿主包写进 dependencies
+
+`@deepseek-ai/dsh-typert-protocol` 与 `@deepseek-ai/cordis` 已从 `dependencies` 移除，
+typert-protocol 改为 **可选 peerDependency**：
+
+* pnpm 不会把可选 peer 装进 profile（安装后 `profiles/<name>/node_modules` 里只有本插件和 zod），
+  因此不会出现旧副本遮蔽宿主同名包——那正是历史上 `sessions` 服务无法激活、启动即崩的根因。
+* 运行时解析由 DSH 自己的 runtime resolution 负责，`import "@deepseek-ai/dsh-typert-protocol"`
+  始终命中宿主当前那一份，插件不需要跟着 rc 版本改依赖。
+
+### 3. 分叉交给宿主，接口缺失才回退
+
+rc.5 的 `sessionController.fork({ sessionId, atSeq })` 已经原生实现了本插件的核心动作：观测会话、
+按边界构造分叉种子、按父会话的 Agent preset 组合同样能力、继承会话模型、并把子会话挂到父会话所在工作区。
+插件现在优先调用它，只在宿主没有这个命令时才回退到 `lib/compat.host.js` 里的等价实现
+（`session/end-seed` 标记 + 未闭合工具调用的 `forked` 收尾事件 + `agents.create` 传 seed）。
+
+这让最易随版本漂移的一层（种子格式、预设组合、工作区迁移、格式迁移预检）由宿主自己负责，
+插件只保留「算编辑边界 + 发送改写后的消息 + 归档旧分支」这些与版本无关的逻辑。
+
+### 4. 所有宿主能力都按能力探测
+
+服务与方法一律先探测再调用（`ctx.get` + 方法存在性检查），任何一项缺失只会降级该能力：
+
+* 标题：`sessionTitle.get(session)` 快照与旧的 `titleOf(session)` 都支持，取不到就跳过改名。
+* 归档：优先 `archiveSession(id, { stopActivity: true })`（rc.5 要求在停止会话活动的前提下归档，
+  否则会抛 `WorkspaceActiveSessionError`），失败再退回不带选项的调用，最后退回逐个 `detachSession`。
+* 模型继承：原生分叉路径由宿主从会话投影继承；回退路径显式写入 `model/selection` 并带上 `agentOptions`。
+* 取消旧会话：`agent.cancel({ kind: "user" })` 的收尾原因对象（裸字符串会让循环收尾时抛错）。
+
+### 5. 客户端只依赖槽位契约
+
+客户端只 `require("react")`，通过 `ctx.slots.inject("conversation.chat.node", ...)` 注册 `user` 与
+`steering` 两个 key（priority `-2`），remote 走 `ctx.remote.$mount()`。槽位注册与 remote 挂载都有
+try/catch 兜底，任一侧失败只会在控制台报错，不会拖垮整个插件的激活。
+
+### 升级到新的 DSH 时
+
+正常情况下什么都不用改。若某个未来版本删掉了这些能力，插件会自行降级或给出明确拒绝，
+而不是在启动阶段把整个应用拖垮。真遇到问题时，先看 `%APPDATA%\@deepseek-ai\dsh-desktop\logs`
+里的 host 日志与插件管理器日志。
 
 ### 启动失败排查
 
@@ -66,15 +98,14 @@ Get-ChildItem "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\@deepseek-ai"
 ```
 
 其中出现低于当前 DSH 版本的包（例如 rc.2 的 `dsh-session`）即为遮蔽源；删掉这些旧副本
-（连同 `pnpm-lock.yaml`、`package.json` 里对它们的声明）后重启 DSH 即可。本插件自身只会
-安装与宿主同版本的 `dsh-typert-protocol` 与 `cordis`，不会再引入其它 `@deepseek-ai/dsh-*`
-运行时包。
+（连同 `pnpm-lock.yaml`、`package.json` 里对它们的声明）后重启 DSH 即可。本插件自身不会往
+profile 里装任何 `@deepseek-ai/*` 运行时包 —— 需要的那一个走可选 peer，由宿主运行时解析提供。
 
 ## 工作原理
 
-1. 在编辑的轮次之前截断会话历史记录
-2. 使用你更新后的消息和附件生成一个干净的子会话
-3. 通过客户端的工作区服务就地显示该子会话
+1. 在编辑的轮次之前截断会话历史记录（宿主 `sessionController.fork({ atSeq })`）
+2. 用你更新后的消息和附件在新分支上开始下一轮（原附件块原样保留）
+3. 通过客户端的工作区服务就地显示该子会话（`uiWorkspace.openSession`）
 4. 视图切换后，归档旧的会话分支
 
 ## 许可证

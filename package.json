@@ -1,6 +1,6 @@
 {
   "name": "dsh-message-edit-desktop",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "In-place session message editing for DeepSeek Harness: edit any past message, branch the history seamlessly without reloading the page",
   "type": "module",
   "license": "MIT",
@@ -19,7 +19,7 @@
   ],
   "engines": {
     "node": ">=20",
-    "dsh": "0.2.1-rc.3"
+    "dsh": ">=0.2.1-rc.5"
   },
   "main": "lib/index.js",
   "exports": {
@@ -48,7 +48,7 @@
       "inject": [
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-ui-chat",
         "@deepseek-ai/dsh-client-ui-conversation"
       ],
@@ -56,17 +56,21 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "4.0.5",
-    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.3",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis-plugin-loader": "^1.0.2",
-    "@deepseek-ai/dsh-client-locale": "^0.1.5-rc.1 || ^0.2.0-rc.1 || ^0.2.1-rc.3",
-    "react": "^18.2.0"
+    "@deepseek-ai/dsh-typert-protocol": ">=0.2.1-rc.5",
+    "@deepseek-ai/dsh-client-locale": ">=0.1.5-rc.1",
+    "react": ">=18.2.0"
   },
   "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-typert-protocol": {
+      "optional": true
+    },
     "@deepseek-ai/dsh-client-locale": {
+      "optional": true
+    },
+    "react": {
       "optional": true
     }
   }
