@@ -1,6 +1,6 @@
 {
-  "name": "dsh-message-edit-desktop",
-  "version": "1.3.1",
+  "name": "dsh-edit",
+  "version": "1.4.0",
   "description": "In-place session message editing for DeepSeek Harness: edit any past message, branch the history seamlessly without reloading the page",
   "type": "module",
   "license": "MIT",
@@ -11,7 +11,7 @@
     "dsh-desktop",
     "cordis",
     "dsh-plugin",
-    "message-edit-desktop",
+    "dsh-edit",
     "edit",
     "chat",
     "branching",

@@ -29,10 +29,10 @@
 ## 安装 (DSH Desktop)
 
 1. 打开 DSH Desktop 中的插件管理器，并导入此文件夹
-2. 确保 `dsh-message-edit-desktop` 已启用
+2. 确保 `dsh-edit` 已启用
 3. 重启/重新加载客户端一次（插件包将提供给浏览器客户端）
 
-包名刻意与市场里的 `dsh-message-edit`、`dsh-plugin-message-edit` 区分开：本插件占用的是
+包名 `dsh-edit` 刻意与市场里的 `dsh-message-edit`、`dsh-plugin-message-edit` 区分开：本插件占用的是
 `messageEditDesktop` 服务和命名空间，因此可以和它们共存而不冲突。同时安装时只有槽位优先级
 最低的那个渲染器生效 —— 本插件注册在 `-2`，所以它的编辑器会压过内置渲染器（`0`）和
 `dsh-prompt-edit`（`-1`）。
